@@ -1,7 +1,7 @@
 use warp::{http::Method, Filter};
 
 use warp::reject::Reject;
-mod error;
+use handle_errors::return_error;
 mod routes;
 mod store;
 mod types;
@@ -72,6 +72,6 @@ async fn main() {
         .or(add_answer)
         .or(delete_question)
         .with(cors)
-        .recover(error::return_error);
+        .recover(return_error);
     warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
 }

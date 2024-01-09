@@ -1,4 +1,3 @@
-use crate::error::Error;
 use crate::store::Store;
 use crate::types::pagination::extract_pagination;
 use crate::types::question::{Question, QuestionId};
@@ -7,6 +6,7 @@ use warp::http::StatusCode;
 use warp::Rejection;
 use warp::Reply;
 use warp::{http::Method, Filter};
+use handle_errors::Error;
 
 pub async fn get_questions(
     params: HashMap<String, String>,
