@@ -5,7 +5,6 @@ use std::collections::HashMap;
 use warp::http::StatusCode;
 use warp::Rejection;
 use warp::Reply;
-use warp::{http::Method, Filter};
 use handle_errors::Error;
 
 pub async fn get_questions(
@@ -46,8 +45,8 @@ pub async fn update_question(
 }
 pub async fn delete_question(id: String, store: Store) -> Result<impl Reply, Rejection> {
     match store.questions.write().await.remove(&QuestionId(id)) {
-        Some(_) => return Ok(warp::reply::with_status("Question deleted", StatusCode::OK)),
-        None => return Err(warp::reject::custom(Error::QuestionNotFound)),
+        Some(_) => Ok(warp::reply::with_status("Question deleted", StatusCode::OK)),
+        None => Err(warp::reject::custom(Error::QuestionNotFound)),
     }
 }
 

@@ -1,6 +1,6 @@
 use warp::reject::Reject;
 use warp::{
-    body::BodyDeserializeError, cors::CorsForbidden, http::Method, http::StatusCode, Filter,
+    body::BodyDeserializeError, cors::CorsForbidden, http::StatusCode, 
     Rejection, Reply,
 };
 #[derive(Debug)]

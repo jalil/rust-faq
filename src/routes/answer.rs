@@ -5,7 +5,6 @@ use crate::types::{
 };
 use std::collections::HashMap;
 use warp::http::StatusCode;
-use warp::{http::Method, Filter, Rejection, Reply};
 //find a way to generate unique IDs when creating new answers.
 //use of unwrap here, which is not production-ready code.
 //If we can’t find a parameter, the Rust application will panic and crash.
