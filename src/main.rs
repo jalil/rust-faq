@@ -1,7 +1,8 @@
+use handle_errors::return_error;
+use tracing_subscriber::fmt::format::FmtSpan;
+use warp::reject::Reject;
 use warp::{http::Method, Filter};
 
-use warp::reject::Reject;
-use handle_errors::return_error;
 mod routes;
 mod store;
 mod types;
@@ -11,38 +12,17 @@ struct InvalidId;
 
 impl Reject for InvalidId {}
 
-//fn start_is_longer_than_end(params: HashMap<String, String>) {
-//    if params.get("start").unwrap() > params.get("end").unwrap() {
-//        println!(
-//            " Start: {:?}  End: {:?} Start is longer than end",
-//            params.get("start"),
-//            params.get("end")
-//        )
-//    }
-//}
 #[tokio::main]
 async fn main() {
-
-    log4rs::init_file("log4rs.yaml", Default::default()).unwrap();
-
-    log::error!("This is an error");
-    log::info!("This is info!");
-    log::warn!("This is a warning");
-
-    let log = warp::log::custom(|info| {
-        log::info!(
-            "{} {} {} {:?} from {} with {:?}",
-            info.method(),
-            info.path(),
-            info.status(),
-            info.elapsed(),
-            info.remote_addr().unwrap(),
-            info.request_headers()
-            );
-    });
-
+    let log_filter =
+        std::env::var("RUST_LOG").unwrap_or_else(|_| "rust_faq_web_app=info,warn=error".to_owned());
     let store = store::Store::new();
     let store_filter = warp::any().map(move || store.clone());
+
+    tracing_subscriber::fmt()
+        .with_env_filter(log_filter)
+        .with_span_events(FmtSpan::CLOSE)
+        .init();
 
     let cors = warp::cors()
         .allow_any_origin()
@@ -54,7 +34,14 @@ async fn main() {
         .and(warp::path::end())
         .and(warp::query())
         .and(store_filter.clone())
-        .and_then(routes::question::get_questions);
+        .and_then(routes::question::get_questions)
+        .with(warp::trace(|info| {
+            tracing::info_span!("get_questions request",
+                method = %info.method(),
+                path = %info.path(),
+                id = %uuid::Uuid::new_v4(),
+            )
+        }));
 
     let add_question = warp::post()
         .and(warp::path("questions"))
@@ -91,7 +78,7 @@ async fn main() {
         .or(add_answer)
         .or(delete_question)
         .with(cors)
-        .with(log)
+        .with(warp::trace::request())
         .recover(return_error);
     warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
 }

@@ -3,32 +3,29 @@ use crate::types::pagination::extract_pagination;
 use crate::types::question::{Question, QuestionId};
 use handle_errors::Error;
 use std::collections::HashMap;
+use tracing::{info, instrument};
 use warp::http::StatusCode;
 use warp::Rejection;
 use warp::Reply;
 
+//Instrument macro (https://tracing.rs/tracing/attr.instrument.html) 
+//to auto- matically open and close a span when the function is called
 pub async fn get_questions(
     params: HashMap<String, String>,
     store: Store,
 ) -> Result<impl Reply, Rejection> {
+    info!(" querying questions");
     if !params.is_empty() {
         let pagination = extract_pagination(params)?;
+        info!(pagination = true);
         let res: Vec<Question> = store.questions.read().await.values().cloned().collect();
         let res = &res[pagination.start..pagination.end];
         Ok(warp::reply::json(&res))
     } else {
+        info!(pagination = false);
         let res: Vec<Question> = store.questions.read().await.values().cloned().collect();
         Ok(warp::reply::json(&res))
     }
-
-    //    let mut start = 0;
-    //    let res: Vec<Question> = store.questions.values().cloned().collect();
-    //
-    //    if let Some(n) = params.get("start") {
-    //        start = n.parse::<usize>().expect("Could not parse start");
-    //    }
-    //    println!("{}", start);
-    //    Ok(warp::reply::json(&res))
 }
 
 pub async fn update_question(
