@@ -1,9 +1,5 @@
 use crate::store::Store;
-use crate::types::{
-    answer::{Answer, AnswerId},
-    question::QuestionId,
-};
-use std::collections::HashMap;
+use crate::types::answer::NewAnswer;
 use warp::http::StatusCode;
 //find a way to generate unique IDs when creating new answers.
 //use of unwrap here, which is not production-ready code.
@@ -12,19 +8,10 @@ use warp::http::StatusCode;
 //
 pub async fn add_answer(
     store: Store,
-    params: HashMap<String, String>,
+    new_answer: NewAnswer,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    let answer = Answer {
-        id: AnswerId("1".to_string()),
-        content: params.get("content").unwrap().to_string(),
-        question_id: QuestionId(params.get("QuestionId").unwrap().to_string()),
-    };
-
-    store
-        .answers
-        .write()
-        .await
-        .insert(answer.id.clone(), answer);
-
-    Ok(warp::reply::with_status("Answer Added", StatusCode::OK))
+    match store.add_answer(new_answer).await {
+        Ok(_) => Ok(warp::reply::with_status("Answer added", StatusCode::OK)),
+        Err(e) => Err(warp::reject::custom(e)),
+    }
 }
