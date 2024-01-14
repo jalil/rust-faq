@@ -3,6 +3,7 @@ use tracing_subscriber::fmt::format::FmtSpan;
 use warp::reject::Reject;
 use warp::{http::Method, Filter};
 
+mod profanity;
 mod routes;
 mod store;
 mod types;
@@ -18,10 +19,10 @@ async fn main() {
         std::env::var("RUST_LOG").unwrap_or_else(|_| "rust_faq_web_app=info,warn=error".to_owned());
     let pg_url = "postgres://localhost:5432/rustwebdev";
     let store = store::Store::new(pg_url).await;
- //    sqlx::migrate!()
- //        .run(&store.clone().connection)
- //        .await
- //        .expect("Cannot run migration");
+    //    sqlx::migrate!()
+    //        .run(&store.clone().connection)
+    //        .await
+    //        .expect("Cannot run migration");
 
     let store_filter = warp::any().map(move || store.clone());
 
