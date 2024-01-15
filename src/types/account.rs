@@ -8,4 +8,4 @@ pub struct Account {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Deserialize, Serialize, Clone)]
-struct AccountId(pub i32);
+pub struct AccountId(pub i32);

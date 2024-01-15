@@ -163,15 +163,8 @@ impl Store {
                         .unwrap()
                         .parse::<i32>()
                         .unwrap(),
-                    db_message = error
-                        .as_database_error()
-                        .unwrap()
-                        .message(),
-                    contraint = error
-                        .as_database_error()
-                        .unwrap()
-                        .constraint()
-                        .unwrap(),
+                    db_message = error.as_database_error().unwrap().message(),
+                    contraint = error.as_database_error().unwrap().constraint().unwrap(),
                 );
                 Err(Error::DatabaseQueryError)
             }
