@@ -43,10 +43,10 @@ pub async fn update_question(
     let (title, content) = (title.await.unwrap(), content.await.unwrap());
 
     if title.is_err() {
-        return  Err(warp::reject::custom(title.unwrap_err()));
+        return Err(warp::reject::custom(title.unwrap_err()));
     }
     if content.is_err() {
-        return  Err(warp::reject::custom(title.unwrap_err()));
+        return Err(warp::reject::custom(title.unwrap_err()));
     }
 
     let question = Question {

@@ -14,15 +14,16 @@ struct InvalidId;
 impl Reject for InvalidId {}
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), sqlx::Error> {
     let log_filter =
         std::env::var("RUST_LOG").unwrap_or_else(|_| "rust_faq_web_app=info,warn=error".to_owned());
     let pg_url = "postgres://localhost:5432/rustwebdev";
     let store = store::Store::new(pg_url).await;
-    //    sqlx::migrate!()
-    //        .run(&store.clone().connection)
-    //        .await
-    //        .expect("Cannot run migration");
+    // sqlx::migrate!().run(&store.clone().connection).await?;
+    // sqlx::migrate!()
+    //     .run(&store.clone().connection)
+    //     .await
+    //     .expect("Cannot run migration");
 
     let store_filter = warp::any().map(move || store.clone());
 
@@ -79,13 +80,22 @@ async fn main() {
         .and(warp::body::form())
         .and_then(routes::answer::add_answer);
 
+    let registration = warp::post()
+        .and(warp::path("registration"))
+        .and(warp::path::end())
+        .and(store_filter.clone())
+        .and(warp::body::json())
+        .and_then(routes::authentication::register);
+
     let routes = get_questions
         .or(add_question)
         .or(update_question)
         .or(add_answer)
         .or(delete_question)
+        .or(registration)
         .with(cors)
         .with(warp::trace::request())
         .recover(return_error);
     warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
+    Ok(())
 }

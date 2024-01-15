@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
 use reqwest_middleware::ClientBuilder;
-use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
+use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct APIResponse {
@@ -26,7 +26,9 @@ struct BadWordResponse {
 
 pub async fn check_profanity(_content: String) -> Result<String, handle_errors::Error> {
     let retry_policy = ExponentialBackoff::builder().build_with_max_retries(3);
-    let client = ClientBuilder::new(reqwest::Client::new()).with(RetryTransientMiddleware::new_with_policy(retry_policy)).build();
+    let client = ClientBuilder::new(reqwest::Client::new())
+        .with(RetryTransientMiddleware::new_with_policy(retry_policy))
+        .build();
     let client = reqwest::Client::new();
     let res = client
         .post("https://api.apilayer.com/bad_words?censor_character=*")
