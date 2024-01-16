@@ -2,23 +2,39 @@ use handle_errors::return_error;
 use tracing_subscriber::fmt::format::FmtSpan;
 use warp::reject::Reject;
 use warp::{http::Method, Filter};
+use config::Config;
 
 mod profanity;
 mod routes;
 mod store;
 mod types;
 
-#[derive(Debug)]
-struct InvalidId;
+ //#[derive(Debug)]
+ //struct InvalidId;
 
-impl Reject for InvalidId {}
-
+//impl Reject for InvalidId {}
+#[derive(Debug, Default, serde::Deserialize, PartialEq)]
+struct Args {
+    log_level: String,
+    database_host: String,
+    database_port: u16,
+    database_name: String,
+    port: u16
+}
 #[tokio::main]
 async fn main() -> Result<(), sqlx::Error> {
+    let config = Config::builder().add_source(config::File::with_name("setup"))
+        .build()
+        .unwrap();
+
+    let config = config.try_deserialize::<Args>().unwrap();
+
     let log_filter =
-        std::env::var("RUST_LOG").unwrap_or_else(|_| "rust_faq_web_app=info,warn=error".to_owned());
+        std::env::var("RUST_LOG").unwrap_or_else(|_| {
+            format!("handle_error={}, rust_faq_web_app={}, warp={}",config.log_level, config.log_level, config.log_level)
+        } );
     let pg_url = "postgres://localhost:5432/rustwebdev";
-    let store = store::Store::new(pg_url).await;
+    let store = store::Store::new(&format!("postgres://{}:{}/{}",config.database_host, config.database_port, config.database_name)).await;
     // sqlx::migrate!().run(&store.clone().connection).await?;
 
     let store_filter = warp::any().map(move || store.clone());
@@ -104,6 +120,6 @@ async fn main() -> Result<(), sqlx::Error> {
         .with(cors)
         .with(warp::trace::request())
         .recover(return_error);
-    warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
+    warp::serve(routes).run(([127, 0, 0, 1], config.port)).await;
     Ok(())
 }
