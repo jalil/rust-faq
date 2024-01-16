@@ -5,6 +5,7 @@ use warp::{
     Reply,
 };
 
+use argon2::Error as ArgonError;
 use reqwest::Error as ReqwestError;
 use tracing::instrument;
 use tracing::{event, Level};
@@ -16,11 +17,15 @@ use reqwest_middleware::Error as MiddlewareReqwestError;
 pub enum Error {
     ParseError(std::num::ParseIntError),
     MissingParameters,
+    WrongPassword,
+    ArgonLibraryError(ArgonError),
     DatabaseQueryError(sqlx::Error),
     ReqwestAPIError(ReqwestError),
     MiddlewareReqwestAPIError(MiddlewareReqwestError),
     ClientError(APILayerError),
     ServerError(APILayerError),
+    CannotDecryptToken,
+    Unauthorized,
 }
 
 #[derive(Debug)]
@@ -42,11 +47,19 @@ impl std::fmt::Display for Error {
                 write!(f, "Cannot parse parameter: {}", err)
             }
             Error::MissingParameters => write!(f, "Missing Parameter"),
+            Error::CannotDecryptToken => write!(f, "Cannot decrypt token"),
+            Error::Unauthorized => write!(f, "No permission to change the underlying resource"),
             Error::DatabaseQueryError(_) => {
                 write!(f, "Cannot update, invalid data.")
             }
             Error::ReqwestAPIError(err) => {
                 write!(f, "External API error: {}", err)
+            }
+            Error::WrongPassword => {
+                write!(f, "Wrong Password")
+            }
+            Error::ArgonLibraryError(_) => {
+                write!(f, "Cannot verify Password")
             }
             Error::MiddlewareReqwestAPIError(err) => {
                 write!(f, "External API error: {}", err)
@@ -102,6 +115,18 @@ pub async fn return_error(r: Rejection) -> Result<impl Reply, Rejection> {
         Ok(warp::reply::with_status(
             "Internal server error".to_string(),
             StatusCode::INTERNAL_SERVER_ERROR,
+        ))
+    } else if let Some(crate::Error::WrongPassword) = r.find() {
+        event!(Level::ERROR, "Entered wrong password");
+        Ok(warp::reply::with_status(
+            "Wrong E-Mail/Password combination".to_string(),
+            StatusCode::UNAUTHORIZED,
+        ))
+    } else if let Some(crate::Error::Unauthorized) = r.find() {
+        event!(Level::ERROR, "No matching account id");
+        Ok(warp::reply::with_status(
+            "No permission to change underlying resource".to_string(),
+            StatusCode::UNAUTHORIZED,
         ))
     } else if let Some(crate::Error::ReqwestAPIError(e)) = r.find() {
         event!(Level::ERROR, "{}", e);

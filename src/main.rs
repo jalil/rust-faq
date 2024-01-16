@@ -20,10 +20,6 @@ async fn main() -> Result<(), sqlx::Error> {
     let pg_url = "postgres://localhost:5432/rustwebdev";
     let store = store::Store::new(pg_url).await;
     // sqlx::migrate!().run(&store.clone().connection).await?;
-    // sqlx::migrate!()
-    //     .run(&store.clone().connection)
-    //     .await
-    //     .expect("Cannot run migration");
 
     let store_filter = warp::any().map(move || store.clone());
 
@@ -54,6 +50,7 @@ async fn main() -> Result<(), sqlx::Error> {
     let add_question = warp::post()
         .and(warp::path("questions"))
         .and(warp::path::end())
+        .and(routes::authentication::auth())
         .and(store_filter.clone())
         .and(warp::body::json())
         .and_then(routes::question::add_question);
@@ -62,6 +59,7 @@ async fn main() -> Result<(), sqlx::Error> {
         .and(warp::path("questions"))
         .and(warp::path::param::<i32>())
         .and(warp::path::end())
+        .and(routes::authentication::auth())
         .and(store_filter.clone())
         .and(warp::body::json())
         .and_then(routes::question::update_question);
@@ -70,12 +68,14 @@ async fn main() -> Result<(), sqlx::Error> {
         .and(warp::path("questions"))
         .and(warp::path::param::<i32>())
         .and(warp::path::end())
+        .and(routes::authentication::auth())
         .and(store_filter.clone())
         .and_then(routes::question::delete_question);
 
     let add_answer = warp::post()
         .and(warp::path("answer"))
         .and(warp::path::end())
+        .and(routes::authentication::auth())
         .and(store_filter.clone())
         .and(warp::body::form())
         .and_then(routes::answer::add_answer);
@@ -87,12 +87,20 @@ async fn main() -> Result<(), sqlx::Error> {
         .and(warp::body::json())
         .and_then(routes::authentication::register);
 
+    let login = warp::post()
+        .and(warp::path("login"))
+        .and(warp::path::end())
+        .and(store_filter.clone())
+        .and(warp::body::json())
+        .and_then(routes::authentication::login);
+
     let routes = get_questions
         .or(add_question)
         .or(update_question)
         .or(add_answer)
         .or(delete_question)
         .or(registration)
+        .or(login)
         .with(cors)
         .with(warp::trace::request())
         .recover(return_error);
