@@ -10,7 +10,6 @@ use reqwest::Error as ReqwestError;
 use tracing::instrument;
 use tracing::{event, Level};
 
-use reqwest_middleware::ClientBuilder;
 use reqwest_middleware::Error as MiddlewareReqwestError;
 
 #[derive(Debug)]

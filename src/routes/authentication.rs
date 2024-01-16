@@ -1,4 +1,3 @@
-use paseto::v1::local_paseto;
 use std::future;
 use warp::http::StatusCode;
 use warp::Filter;
